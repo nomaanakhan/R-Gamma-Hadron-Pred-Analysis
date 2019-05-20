@@ -1,0 +1,144 @@
+## Data Set 2 (ds2) Despcription:
+    
+    The data are MC generated (see below) to simulate registration of high energy gamma particles and hadron particles in a        ground-based atmospheric Cherenkov gamma telescope using an imaging technique.
+    
+    I'm trying to predict whether the particles are gamma or hadron based on predictors 1-10 described in the attribute            description.
+    
+    I have performed logistic regression and kNN classification on the data.
+    
+    Number of Instances: 19020
+    Number of Attributes: 11 (including target)
+    
+    Attribute Description:
+    
+        1.   fLength:  continuous  # major axis of ellipse [mm]
+        2.   fWidth:   continuous  # minor axis of ellipse [mm] 
+        3.   fSize:    continuous  # 10-log of sum of content of all pixels [in #phot]
+        4.   fConc:    continuous  # ratio of sum of two highest pixels over fSize  [ratio]
+        5.   fConc1:   continuous  # ratio of highest pixel over fSize  [ratio]
+        6.   fAsym:    continuous  # distance from highest pixel to center, projected onto major axis [mm]
+        7.   fM3Long:  continuous  # 3rd root of third moment along major axis  [mm] 
+        8.   fM3Trans: continuous  # 3rd root of third moment along minor axis  [mm]
+        9.   fAlpha:   continuous  # angle of major axis with vector to origin [deg]
+        10.  fDist:    continuous  # distance from origin to center of ellipse [mm]
+        11.  class:    g,h         # gamma (signal), hadron (background)
+    
+    Target Distribution:
+        g = gamma (signal):     12332
+        h = hadron (background): 6688
+    
+    The data set is obtained from "http://archive.ics.uci.edu/ml/machine-learning-databases/magic/"
+    The data is in magic04.data "http://archive.ics.uci.edu/ml/machine-learning-databases/magic/magic04.data"
+    For full citation see the citation section at the end.
+
+
+```{r}
+ds2 <- read.table("C:/Users/ADMIN/Desktop/Academia 2.0/Junior/Spring 2018/Machine Learning/HW/magic04.data", header=FALSE, sep=",")
+```
+
+
+Adding column names for easy interpretation.
+```{r}
+colnames(ds2) <- c("fLength","fWidth","fSize","fConc","fConc1","fAsym","fM3Long","fM3Trans","fAlpha","fDist","class")
+```
+
+Using R functions to gauge data set.
+
+```{r}
+dim(ds2)
+summary(ds2)
+```
+
+
+```{r}
+names(ds2)
+head(ds2)
+str(ds2)
+```
+
+```{r}
+par(mfrow=c(1,2))
+cdplot(ds2$class~ds2$fSize)
+cdplot(ds2$class~ds2$fAlpha)
+```
+From the first cdplot we can see that gamma particles tend to have smaller size.
+From the second cdplot we can see that gamma particles tend to have lower alpha.
+
+
+Splitting the data randomly into 75% train and 25% test.
+
+```{r}
+set.seed(1234)
+i <- sample(nrow(ds2), nrow(ds2)*0.75, replace=FALSE)
+train <- ds2[i,]
+test <- ds2[-i,]
+```
+
+Creating logistic model with class as the target and fLength, fWidth, fSize, fConc, fConc1, fAsym, fM3Long, fM3Trans, fAlpha and fDist, as predictors
+
+```{r}
+glm1 = glm(class~., data=train, family=binomial)
+probs <- predict(glm1, newdata=test, type="response")
+pred <- ifelse(probs>0.5, "h", "g")
+table(pred, test$class)
+```
+
+
+```{r}
+summary(glm1)
+```
+
+Calculating te accuracy of the model.
+
+```{r}
+paste("accuracy = ", sum(pred==test$class)/NROW(test$class)*100, "%")
+```
+
+
+Splitting the data randomly into 75% train and 25% test.
+
+```{r}
+set.seed(1234)  # setting a seed gets the same results every time
+ind <- sample(2, nrow(ds2), replace=TRUE, prob=c(0.75, 0.25))
+ds2.train <- ds2[ind==1, 1:10]
+ds2.test <- ds2[ind==2, 1:10]
+ds2.trainLabels <- ds2[ind==1, 11]
+ds2.testLabels <- ds2[ind==2, 11]
+```
+
+Performing kNN classification on the data. The predictors are the same as the ones for the logistic model.
+
+```{r}
+library(class)
+ds2_pred <- knn(train=ds2.train, test=ds2.test, cl=ds2.trainLabels, k=10)
+```
+
+
+```{r}
+summary(ds2_pred)
+```
+Summary doesn't tell us much.
+
+Calculating accuracy.
+
+```{r}
+results <- ds2_pred == ds2.testLabels
+acc <- length(which(results==TRUE)) / length(results)
+acc
+```
+
+
+## Analysing Models/Algorithm Results:
+
+    Both logistic model and kNN classification have good accuracy.
+    
+    The logistic model has an accuracy of 79.9158780231335%.
+    
+    kNN classification gives us an accuracy of 80.62949%.
+    
+    kNN classifiaction gives is slightly better for this data set.
+
+## Citations:
+    1. Data Set 2 (Gamma and hadron particle data set)
+    
+        [1] Lichman, M. (2013). UCI Machine Learning Repository                                                                            [http://archive.ics.uci.edu/ml/machine-learning-databases/magic/]. Irvine, CA: University of California, School of             Information and Computer Science.
